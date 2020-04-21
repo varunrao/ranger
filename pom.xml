@@ -169,6 +169,7 @@
         <owasp-java-html-sanitizer.version>r239</owasp-java-html-sanitizer.version>
         <paranamer.version>2.3</paranamer.version>
         <presto.version>310</presto.version>
+        <prestodb.version>0.227</prestodb.version>
         <poi.version>3.17</poi.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <protobuf-java.version>2.5.0</protobuf-java.version>
@@ -274,6 +275,8 @@
                 <module>ranger-kylin-plugin-shim</module>
                 <module>plugin-elasticsearch</module>
                 <module>ranger-elasticsearch-plugin-shim</module>
+                <module>plugin-prestodb</module>
+                <module>ranger-prestodb-plugin-shim</module>
                 <!--
                    'distro' should be the last module. If a module gets inserted after
                    ranger-elasticsearch-plugin-shim, make sure to update dependency in distro/pom.xml
@@ -499,6 +502,20 @@
             </modules>
         </profile>
         <profile>
+            <id>ranger-prestodb-plugin</id>
+            <modules>
+                <module>agents-audit</module>
+                <module>agents-common</module>
+                <module>agents-cred</module>
+                <module>agents-installer</module>
+                <module>credentialbuilder</module>
+                <module>ranger-plugin-classloader</module>
+                <module>ranger-util</module>
+                <module>plugin-presto</module>
+                <module>ranger-prestodb-plugin-shim</module>
+            </modules>
+        </profile>
+        <profile>
             <id>linux</id>
             <activation>
                 <os>
@@ -559,6 +576,8 @@
                 <module>ranger-presto-plugin-shim</module>
                 <module>plugin-elasticsearch</module>
                 <module>ranger-elasticsearch-plugin-shim</module>
+                <module>plugin-prestodb</module>
+                <module>ranger-prestodb-plugin-shim</module>
                 <!--
                    'distro' should be the last module. If a module gets inserted after
                    ranger-elasticsearch-plugin-shim, make sure to update dependency in distro/pom.xml
@@ -640,6 +659,8 @@
                 <module>ranger-kylin-plugin-shim</module>
                 <module>plugin-elasticsearch</module>
                 <module>ranger-elasticsearch-plugin-shim</module>
+                <module>plugin-prestodb</module>
+                <module>ranger-prestodb-plugin-shim</module>
             </modules>
             <build>
                 <plugins>
