@@ -19,8 +19,7 @@
 
 package org.apache.ranger.authorization.hive.authorizer;
 
-import java.util.*;
-
+import com.google.common.collect.Lists;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -33,7 +32,7 @@ import org.apache.ranger.plugin.policyengine.RangerAccessRequest;
 import org.apache.ranger.plugin.policyengine.RangerAccessResource;
 import org.apache.ranger.plugin.policyengine.RangerAccessResult;
 
-import com.google.common.collect.Lists;
+import java.util.*;
 
 public class RangerHiveAuditHandler extends RangerDefaultAuditHandler {
 
@@ -54,7 +53,7 @@ public class RangerHiveAuditHandler extends RangerDefaultAuditHandler {
 	}
 
 	AuthzAuditEvent createAuditEvent(RangerAccessResult result, String accessType, String resourcePath) {
-		RangerAccessRequest  request      = result.getAccessRequest();
+		RangerAccessRequest request      = result.getAccessRequest();
 		RangerAccessResource resource     = request.getResource();
 		String               resourceType = resource != null ? resource.getLeafName() : null;
 
@@ -84,16 +83,16 @@ public class RangerHiveAuditHandler extends RangerDefaultAuditHandler {
 			if (hiveAccessType == HiveAccessType.SERVICEADMIN) {
 				String hiveOperationType = request.getAction();
 				String commandStr = request.getRequestData();
-				if (HiveOperationType.KILL_QUERY.name().equalsIgnoreCase(hiveOperationType)) {
-					String queryId = getServiceAdminQueryId(commandStr);
-					if (!StringUtils.isEmpty(queryId)) {
-						auditEvent.setRequestData(queryId);
-					}
-					commandStr = getServiceAdminCmd(commandStr);
-					if (StringUtils.isEmpty(commandStr)) {
-						commandStr = hiveAccessType.name();
-					}
-				}
+//				if (HiveOperationType.KILL_QUERY.name().equalsIgnoreCase(hiveOperationType)) {
+//					String queryId = getServiceAdminQueryId(commandStr);
+//					if (!StringUtils.isEmpty(queryId)) {
+//						auditEvent.setRequestData(queryId);
+//					}
+//					commandStr = getServiceAdminCmd(commandStr);
+//					if (StringUtils.isEmpty(commandStr)) {
+//						commandStr = hiveAccessType.name();
+//					}
+//				}
 				auditEvent.setAccessType(commandStr);
 			}
 
@@ -110,7 +109,7 @@ public class RangerHiveAuditHandler extends RangerDefaultAuditHandler {
 
 		AuthzAuditEvent ret = null;
 
-		RangerAccessRequest  request  = result.getAccessRequest();
+		RangerAccessRequest request  = result.getAccessRequest();
 		RangerAccessResource resource = request.getResource();
 		String               resourcePath = resource != null ? resource.getAsString() : null;
 		int                  policyType = result.getPolicyType();

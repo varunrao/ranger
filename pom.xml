@@ -120,11 +120,11 @@
         <googlecode.log4jdbc.version>1.2</googlecode.log4jdbc.version>
         <gson.version>2.2.4</gson.version>
         <guice.version>4.0</guice.version>
-        <hadoop.version>3.1.1</hadoop.version>
+        <hadoop.version>2.8.5</hadoop.version>
         <ozone.version>0.4.0-alpha</ozone.version>
         <hamcrest.all.version>1.3</hamcrest.all.version>
         <hbase.version>2.0.2</hbase.version>
-        <hive.version>3.1.2</hive.version>
+        <hive.version>2.3.6</hive.version>
         <hbase-shaded-protobuf>2.0.0</hbase-shaded-protobuf>
         <hbase-shaded-netty>2.0.0</hbase-shaded-netty>
         <hbase-shaded-miscellaneous>2.0.0</hbase-shaded-miscellaneous>
@@ -168,6 +168,7 @@
         <noggit.version>0.8</noggit.version>
         <owasp-java-html-sanitizer.version>r239</owasp-java-html-sanitizer.version>
         <paranamer.version>2.3</paranamer.version>
+        <prestosql.version>310</prestosql.version>
         <presto.version>310</presto.version>
         <prestodb.version>0.227</prestodb.version>
         <poi.version>3.17</poi.version>
@@ -193,7 +194,7 @@
         <codehaus.woodstox.stax2api.version>3.1.4</codehaus.woodstox.stax2api.version>
         <fasterxml.woodstox.version>5.0.3</fasterxml.woodstox.version>
         <fasterxml.jackson.version>2.9.9</fasterxml.jackson.version>
-                <fasterxml.jackson.databind.version>2.9.9.3</fasterxml.jackson.databind.version>
+        <fasterxml.jackson.databind.version>2.9.9.3</fasterxml.jackson.databind.version>
         <kstruct.gethostname4j.version>0.0.2</kstruct.gethostname4j.version>
         <jna.version>5.2.0</jna.version>
         <jna-platform.version>5.2.0</jna-platform.version>
@@ -204,7 +205,7 @@
         <presto.guava.version>26.0-jre</presto.guava.version>
         <presto.validation-api.version>2.0.1.Final</presto.validation-api.version>
 
-    <!-- Azure Key Vault dependencies -->
+        <!-- Azure Key Vault dependencies -->
         <com.microsoft.azure.version>1.22.0</com.microsoft.azure.version>
         <com.microsoft.azure.azure-keyvault.version>1.2.1</com.microsoft.azure.azure-keyvault.version>
         <com.microsoft.azure.azure-mgmt-keyvault.version>1.22.0</com.microsoft.azure.azure-mgmt-keyvault.version>
@@ -375,7 +376,7 @@
                 <module>ranger-yarn-plugin-shim</module>
             </modules>
         </profile>
-    <profile>
+        <profile>
             <id>ranger-ozone-plugin</id>
             <modules>
                 <module>agents-audit</module>
@@ -523,7 +524,7 @@
                 </os>
             </activation>
             <modules>
-        <module>jisql</module>
+                <module>jisql</module>
                 <module>agents-audit</module>
                 <module>agents-common</module>
                 <module>agents-cred</module>
