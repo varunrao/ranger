@@ -29,8 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
@@ -63,6 +63,9 @@ import org.apache.ranger.plugin.model.RangerBaseModelObject;
 import org.apache.ranger.plugin.model.RangerService;
 import org.apache.ranger.plugin.store.EmbeddedServiceDefsUtil;
 import org.apache.ranger.rest.ServiceREST;
+import org.apache.ranger.security.context.RangerAdminOpContext;
+import org.apache.ranger.security.context.RangerContextHolder;
+import org.apache.ranger.service.XUserService;
 import org.apache.ranger.view.VXPortalUser;
 import org.apache.ranger.view.VXResource;
 import org.apache.ranger.view.VXResponse;
@@ -87,6 +90,9 @@ public class RangerBizUtil {
 
 	@Autowired
 	UserMgr userMgr;
+
+	@Autowired
+	XUserService xUserService;
 
 	@Autowired
 	GUIDUtil guidUtil;
@@ -899,10 +905,8 @@ public class RangerBizUtil {
 	private boolean checkUsrPermForPolicy(Long xUserId, int permission,
 			Long resourceId) {
 		// this snippet load user groups and permission map list from DB
-		List<XXGroup> userGroups = new ArrayList<XXGroup>();
-		List<XXPermMap> permMapList = new ArrayList<XXPermMap>();
-		userGroups = daoManager.getXXGroup().findByUserId(xUserId);
-		permMapList = daoManager.getXXPermMap().findByResourceId(resourceId);
+		List<XXGroup> userGroups = daoManager.getXXGroup().findByUserId(xUserId);
+		List<XXPermMap> permMapList = daoManager.getXXPermMap().findByResourceId(resourceId);
 		Long publicGroupId = getPublicGroupId();
 		boolean matchFound = false;
 		for (XXPermMap permMap : permMapList) {
@@ -910,9 +914,8 @@ public class RangerBizUtil {
 				if (permMap.getPermFor() == AppConstants.XA_PERM_FOR_GROUP) {
 					// check whether permission is enabled for public group or a
 					// group to which user belongs
-					matchFound = (publicGroupId != null && publicGroupId == permMap
-							.getGroupId())
-							|| isGroupInList(permMap.getGroupId(), userGroups);
+					matchFound = (publicGroupId != null && publicGroupId.equals(permMap.getGroupId())) ||
+											 isGroupInList(permMap.getGroupId(), userGroups);
 				} else if (permMap.getPermFor() == AppConstants.XA_PERM_FOR_USER) {
 					// check whether permission is enabled to user
 					matchFound = permMap.getUserId().equals(xUserId);
@@ -1411,6 +1414,19 @@ public class RangerBizUtil {
 	public boolean isUserAllowedForGrantRevoke(RangerService rangerService, String userName) {
 		return isUserInConfigParameter(rangerService, ServiceREST.Allowed_User_List_For_Grant_Revoke, userName);
 	}
+
+	public boolean isUserRangerAdmin(String username) {
+		boolean isAdmin = false;
+		try {
+			VXUser vxUser = xUserService.getXUserByUserName(username);
+			if (vxUser != null && (vxUser.getUserRoleList().contains(RangerConstants.ROLE_ADMIN) || vxUser.getUserRoleList().contains(RangerConstants.ROLE_SYS_ADMIN))) {
+				isAdmin = true;
+			}
+		} catch (Exception ex) {
+		}
+		return isAdmin;
+	}
+
 	public boolean isUserServiceAdmin(RangerService rangerService, String userName) {
 		return isUserInConfigParameter(rangerService, ServiceDBStore.SERVICE_ADMIN_USERS, userName);
 	}
@@ -1493,6 +1509,18 @@ public class RangerBizUtil {
 		return ContextUtil.isBulkModeContext();
 	}
 
+	public static boolean setBulkMode(boolean val) {
+		if(RangerContextHolder.getOpContext()!=null){
+			RangerContextHolder.getOpContext().setBulkModeContext(val);
+		}
+		else {
+			  RangerAdminOpContext opContext = new RangerAdminOpContext();
+			  opContext.setBulkModeContext(val);
+			  RangerContextHolder.setOpContext(opContext);
+		}
+		return isBulkMode();
+	}
+
 	//should be used only in bulk operation like importPolicies, policies delete.
 	public void bulkModeOnlyFlushAndClear() {
 		if (batchClearEnabled) {
@@ -1503,4 +1531,5 @@ public class RangerBizUtil {
 			}
 		}
 	}
+
 }

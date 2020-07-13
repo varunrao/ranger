@@ -24,6 +24,8 @@ import org.apache.commons.collections.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.ranger.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.ranger.authorization.utils.StringUtil;
 import org.apache.ranger.plugin.contextenricher.RangerTagForEval;
 import org.apache.ranger.plugin.model.RangerPolicy;
 import org.apache.ranger.plugin.model.RangerServiceDef;
@@ -39,6 +41,7 @@ import org.apache.ranger.plugin.util.ServicePolicies;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +60,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 	private final PolicyEngine                 policyEngine;
 	private final RangerAccessRequestProcessor requestProcessor;
+	private final ServiceConfig                serviceConfig;
 
 
 	static public RangerPolicyEngine getPolicyEngine(final RangerPolicyEngineImpl other, final ServicePolicies servicePolicies) {
@@ -66,7 +70,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 			PolicyEngine policyEngine = other.policyEngine.cloneWithDelta(servicePolicies);
 
 			if (policyEngine != null) {
-				ret = new RangerPolicyEngineImpl(policyEngine);
+				ret = new RangerPolicyEngineImpl(policyEngine, other);
 			}
 		}
 
@@ -74,10 +78,8 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 	}
 
 	public RangerPolicyEngineImpl(ServicePolicies servicePolicies, RangerPluginContext pluginContext, RangerRoles roles) {
-		policyEngine = new PolicyEngine(servicePolicies, pluginContext, roles);
-
-		policyEngine.getPluginContext().getAuthContext().setRoles(roles);
-
+		policyEngine     = new PolicyEngine(servicePolicies, pluginContext, roles);
+		serviceConfig    = new ServiceConfig(servicePolicies.getServiceConfig());
 		requestProcessor = new RangerDefaultRequestProcessor(policyEngine);
 	}
 
@@ -533,9 +535,10 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 		}
 	}
 
-	private RangerPolicyEngineImpl(final PolicyEngine policyEngine) {
+	private RangerPolicyEngineImpl(final PolicyEngine policyEngine, RangerPolicyEngineImpl other) {
 		this.policyEngine     = policyEngine;
 		this.requestProcessor = new RangerDefaultRequestProcessor(policyEngine);
+		this.serviceConfig    = new ServiceConfig(other.serviceConfig);
 	}
 
 	private RangerAccessResult zoneAwareAccessEvaluationWithNoAudit(RangerAccessRequest request, int policyType) {
@@ -578,8 +581,18 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 			LOG.debug("==> RangerPolicyEngineImpl.evaluatePoliciesNoAudit(" + request + ", policyType =" + policyType + ", zoneName=" + zoneName + ")");
 		}
 
-		Date               accessTime = request.getAccessTime() != null ? request.getAccessTime() : new Date();
-		RangerAccessResult ret        = policyEngine.createAccessResult(request, policyType);
+		final Date               accessTime  = request.getAccessTime() != null ? request.getAccessTime() : new Date();
+		final RangerAccessResult ret         = createAccessResult(request, policyType);
+		final boolean            isSuperUser = isSuperUser(request.getUser(), request.getUserGroups());
+
+		// for superusers, set access as allowed
+		if (isSuperUser) {
+			ret.setIsAllowed(true);
+			ret.setIsAccessDetermined(true);
+			ret.setPolicyId(-1);
+			ret.setPolicyPriority(Integer.MAX_VALUE);
+			ret.setReason("superuser");
+		}
 
 		evaluateTagPolicies(request, policyType, zoneName, tagPolicyRepository, ret);
 
@@ -601,7 +614,9 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 			boolean findAuditByResource = !ret.getIsAuditedDetermined();
 			boolean foundInCache        = findAuditByResource && policyRepository.setAuditEnabledFromCache(request, ret);
 
-			ret.setIsAccessDetermined(false); // discard result by tag-policies, to evaluate resource policies for possible override
+			if (!isSuperUser) {
+				ret.setIsAccessDetermined(false); // discard result by tag-policies, to evaluate resource policies for possible override
+			}
 
 			List<RangerPolicyEvaluator> evaluators = policyRepository.getLikelyMatchPolicyEvaluators(request.getResource(), policyType);
 
@@ -695,7 +710,7 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 				RangerTagForEval    tag            = policyEvaluator.getTag();
 				RangerAccessRequest tagEvalRequest = new RangerTagAccessRequest(tag, tagPolicyRepository.getServiceDef(), request);
-				RangerAccessResult  tagEvalResult  = policyEngine.createAccessResult(tagEvalRequest, policyType);
+				RangerAccessResult  tagEvalResult  = createAccessResult(tagEvalRequest, policyType);
 
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("RangerPolicyEngineImpl.evaluateTagPolicies: Evaluating policies for tag (" + tag.getType() + ")");
@@ -740,6 +755,122 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== RangerPolicyEngineImpl.evaluateTagPolicies(" + request + ", policyType =" + policyType + ", zoneName=" + zoneName + ", " + result + ")");
+		}
+	}
+
+	private RangerAccessResult createAccessResult(RangerAccessRequest request, int policyType) {
+		RangerPolicyRepository repository = policyEngine.getPolicyRepository();
+		RangerAccessResult     ret        = new RangerAccessResult(policyType, repository.getServiceName(), repository.getServiceDef(), request);
+
+		switch (repository.getAuditModeEnum()) {
+			case AUDIT_ALL:
+				ret.setIsAudited(true);
+				break;
+
+			case AUDIT_NONE:
+				ret.setIsAudited(false);
+				break;
+
+			default:
+				if (CollectionUtils.isEmpty(repository.getPolicies()) && policyEngine.getTagPolicyRepository() == null) {
+					ret.setIsAudited(true);
+				}
+
+				break;
+		}
+
+		if (isAuditExcludedUser(request.getUser(), request.getUserGroups(), RangerAccessRequestUtil.getCurrentUserRolesFromContext(request.getContext()))) {
+			ret.setIsAudited(false);
+		}
+
+		return ret;
+	}
+
+	private boolean isAuditExcludedUser(String userName, Set<String> userGroups, Set<String> userRoles) {
+		boolean ret = serviceConfig.isAuditExcludedUser(userName);
+
+		if (!ret) {
+			RangerPluginConfig pluginConfig = policyEngine.getPluginContext().getConfig();
+
+			ret = pluginConfig.isAuditExcludedUser(userName);
+
+			if (!ret && userGroups != null && userGroups.size() > 0) {
+				ret = serviceConfig.hasAuditExcludedGroup(userGroups) || pluginConfig.hasAuditExcludedGroup(userGroups);
+			}
+
+			if (!ret && userRoles != null && userRoles.size() > 0) {
+				ret = serviceConfig.hasAuditExcludedRole(userRoles) || pluginConfig.hasAuditExcludedRole(userRoles);
+			}
+		}
+
+		return ret;
+	}
+
+	private boolean isSuperUser(String userName, Set<String> userGroups) {
+		boolean ret = serviceConfig.isSuperUser(userName);
+
+		if (!ret) {
+			RangerPluginConfig pluginConfig = policyEngine.getPluginContext().getConfig();
+
+			ret = pluginConfig.isSuperUser(userName);
+
+			if (!ret && userGroups != null && userGroups.size() > 0) {
+				ret = serviceConfig.hasSuperGroup(userGroups) || pluginConfig.hasSuperGroup(userGroups);
+			}
+		}
+
+		return ret;
+	}
+
+	private static class ServiceConfig {
+		private final Set<String> auditExcludedUsers;
+		private final Set<String> auditExcludedGroups;
+		private final Set<String> auditExcludedRoles;
+		private final Set<String> superUsers;
+		private final Set<String> superGroups;
+
+		public ServiceConfig(Map<String, String> svcConfig) {
+			if (svcConfig != null) {
+				auditExcludedUsers  = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_USERS));
+				auditExcludedGroups = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_GROUPS));
+				auditExcludedRoles  = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_ROLES));
+				superUsers          = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_USERS));
+				superGroups         = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_GROUPS));
+			} else {
+				auditExcludedUsers  = Collections.emptySet();
+				auditExcludedGroups = Collections.emptySet();
+				auditExcludedRoles  = Collections.emptySet();
+				superUsers          = Collections.emptySet();
+				superGroups         = Collections.emptySet();
+			}
+		}
+
+		public ServiceConfig(ServiceConfig other) {
+			auditExcludedUsers  = other == null || CollectionUtils.isEmpty(other.auditExcludedUsers) ? Collections.emptySet() : new HashSet<>(other.auditExcludedUsers);
+			auditExcludedGroups = other == null || CollectionUtils.isEmpty(other.auditExcludedGroups) ? Collections.emptySet() : new HashSet<>(other.auditExcludedGroups);
+			auditExcludedRoles  = other == null || CollectionUtils.isEmpty(other.auditExcludedRoles) ? Collections.emptySet() : new HashSet<>(other.auditExcludedRoles);
+			superUsers          = other == null || CollectionUtils.isEmpty(other.superUsers) ? Collections.emptySet() : new HashSet<>(other.superUsers);
+			superGroups         = other == null || CollectionUtils.isEmpty(other.superGroups) ? Collections.emptySet() : new HashSet<>(other.superGroups);
+		}
+
+		public boolean isAuditExcludedUser(String userName) {
+			return auditExcludedUsers.contains(userName);
+		}
+
+		public boolean hasAuditExcludedGroup(Set<String> userGroups) {
+			return userGroups != null && userGroups.size() > 0 && auditExcludedGroups.size() > 0 && CollectionUtils.containsAny(userGroups, auditExcludedGroups);
+		}
+
+		public boolean hasAuditExcludedRole(Set<String> userRoles) {
+			return userRoles != null && userRoles.size() > 0 && auditExcludedRoles.size() > 0 && CollectionUtils.containsAny(userRoles, auditExcludedRoles);
+		}
+
+		public boolean isSuperUser(String userName) {
+			return superUsers.contains(userName);
+		}
+
+		public boolean hasSuperGroup(Set<String> userGroups) {
+			return userGroups != null && userGroups.size() > 0 && superGroups.size() > 0 && CollectionUtils.containsAny(userGroups, superGroups);
 		}
 	}
 }

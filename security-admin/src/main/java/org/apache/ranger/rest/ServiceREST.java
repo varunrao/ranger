@@ -745,12 +745,16 @@ public class ServiceREST {
 			}
                          bizUtil.blockAuditorRoleUser();
 
-			if (StringUtils.isBlank(service.getTagService()) && xxServiceDef != null && !StringUtils.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME, xxServiceDef.getName())) {
+			if (StringUtils.isBlank(service.getTagService())
+					&& xxServiceDef != null
+					&& !StringUtils.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME, xxServiceDef.getName())
+					&& !StringUtils.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_KMS_NAME , xxServiceDef.getName())) {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("Tag service may need to be created and linked with this service:[" + service.getName() + "]");
 				}
 				scheduleCreateOrGetTagService(service);
 			}
+
 			ret = svcStore.createService(service);
 		} catch(WebApplicationException excp) {
 			throw excp;
@@ -1277,7 +1281,10 @@ public class ServiceREST {
 						vXResponse.setMsgDesc("Operation denied. LoggedInUser=" + vxUser.getId() + " is not permitted to perform the action.");
 						throw restErrorUtil.generateRESTException(vXResponse);
 					}
-					boolean isAdmin = hasAdminAccess(serviceName, userName, userGroups, resource);
+					RangerService rangerService = svcStore.getServiceByName(serviceName);
+
+					boolean isAdmin = bizUtil.isUserRangerAdmin(userName) || bizUtil.isUserServiceAdmin(rangerService, userName) || hasAdminAccess(serviceName, userName, userGroups, resource);
+
 
 					if(!isAdmin) {
 						throw restErrorUtil.createGrantRevokeRESTException( "User doesn't have necessary permission to grant access");
@@ -1393,7 +1400,7 @@ public class ServiceREST {
 							isAllowed = true;
 						}
 					} else {
-						isAllowed = hasAdminPrivilege || hasAdminAccess(serviceName, userName, userGroups, resource);
+						isAllowed = bizUtil.isUserRangerAdmin(userName) || bizUtil.isUserServiceAdmin(rangerService, userName) || hasAdminAccess(serviceName, userName, userGroups, resource);
 					}
 
 					if (isAllowed) {
@@ -1507,7 +1514,9 @@ public class ServiceREST {
 						vXResponse.setMsgDesc("Operation denied. LoggedInUser=" + vxUser.getId() + " is not permitted to perform the action.");
 						throw restErrorUtil.generateRESTException(vXResponse);
 					}
-					boolean isAdmin = hasAdminAccess(serviceName, userName, userGroups, resource);
+					RangerService rangerService = svcStore.getServiceByName(serviceName);
+
+					boolean isAdmin = bizUtil.isUserRangerAdmin(userName) || bizUtil.isUserServiceAdmin(rangerService, userName) || hasAdminAccess(serviceName, userName, userGroups, resource);
 
 					if(!isAdmin) {
 						throw restErrorUtil.createGrantRevokeRESTException("User doesn't have necessary permission to revoke access");
@@ -1587,7 +1596,7 @@ public class ServiceREST {
 							isAllowed = true;
 						}
 					} else {
-						isAllowed = hasAdminPrivilege || hasAdminAccess(serviceName, userName, userGroups, resource);
+						isAllowed = bizUtil.isUserRangerAdmin(userName) || bizUtil.isUserServiceAdmin(rangerService, userName) || hasAdminAccess(serviceName, userName, userGroups, resource);
 					}
 
 					if (isAllowed) {
@@ -1651,7 +1660,8 @@ public class ServiceREST {
 					deleteExactMatchPolicyForResource(policies, request.getRemoteUser(), null);
 				}
 				boolean updateIfExists=("true".equalsIgnoreCase(StringUtils.trimToEmpty(request.getParameter(PARAM_UPDATE_IF_EXISTS)))) ? true : false ;
-				if(updateIfExists) {
+				boolean mergeIfExists  = "true".equalsIgnoreCase(StringUtils.trimToEmpty(request.getParameter(PARAM_MERGE_IF_EXISTS)))  ? true : false;
+				if(updateIfExists || mergeIfExists) {
 					RangerPolicy existingPolicy = null;
 					String serviceName = request.getParameter(PARAM_SERVICE_NAME);
 					if (serviceName == null) {
@@ -1677,23 +1687,32 @@ public class ServiceREST {
 						}
 						if (StringUtils.isNotBlank(zoneName)) {
 							existingPolicy = getPolicyByNameAndZone(policy.getService(), policy.getName(), policy.getZoneName());
-							if(existingPolicy==null) {
+							if (existingPolicy == null && policy.getGuid() != null) {
 								existingPolicy = getPolicyByGuid(policy.getGuid(), policy.getService(), policy.getZoneName());
 							}
 						} else {
 							existingPolicy = getPolicyByName(policy.getService(), policy.getName());
-							if(existingPolicy==null) {
+							if (existingPolicy == null && policy.getGuid() != null) {
 								existingPolicy = getPolicyByGuid(policy.getGuid(), policy.getService(), null);
 							}
 						}
 					}
 					try {
 						if (existingPolicy != null) {
-							policy.setId(existingPolicy.getId());
-							ret = updatePolicy(policy);
+							if (updateIfExists) {
+								policy.setId(existingPolicy.getId());
+								ret = updatePolicy(policy);
+							} else if(mergeIfExists){
+								ServiceRESTUtil.mergeExactMatchPolicyForResource(existingPolicy, policy);
+								ret = updatePolicy(existingPolicy);
+							}
 						}
 					} catch (Exception excp){
-						LOG.error("updatePolicy(" + policy + ") failed", excp);
+						if(updateIfExists) {
+							LOG.error("updatePolicy(" + policy + ") failed", excp);
+						}else if(mergeIfExists) {
+							LOG.error("updatePolicy for merge (" + existingPolicy + ") failed", excp);
+						}
 						throw restErrorUtil.createRESTException(excp.getMessage());
 					}
 				}
@@ -2261,7 +2280,9 @@ public class ServiceREST {
 										if (CollectionUtils.isNotEmpty(serviceNameList) && serviceNameList.contains(serviceName) && !sourceServices.contains(serviceName) && !destinationServices.contains(serviceName)) {
 											sourceServices.add(serviceName);
 											destinationServices.add(serviceName);
-										} else if (CollectionUtils.isEmpty(serviceNameList) && !sourceServices.contains(serviceName) && !destinationServices.contains(serviceName)) {
+										} else if (CollectionUtils.isEmpty(serviceNameList)
+												&& !sourceServices.contains(serviceName)
+												&& !destinationServices.contains(serviceName)) {
 											sourceServices.add(serviceName);
 											destinationServices.add(serviceName);
 										}
@@ -3604,6 +3625,7 @@ public class ServiceREST {
 						if(userGroups == null) {
 							userGroups = daoManager.getXXGroupUser().findGroupNamesByUserName(userName);
 						}
+
 						Set<String> roles = policyAdmin.getRolesFromUserAndGroups(userName, userGroups);
 
 						for (RangerPolicy policy : listToFilter) {
@@ -4189,6 +4211,7 @@ public class ServiceREST {
 			RangerService tagService = new RangerService();
 
 			tagService.setName(context.tagServiceName);
+			tagService.setDisplayName(context.tagServiceName);//set DEFAULT display name
 			tagService.setType(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME);
 
 			LOG.info("creating tag-service [" + context.tagServiceName + "]");

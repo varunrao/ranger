@@ -19,7 +19,6 @@
 
 package org.apache.ranger.plugin.model.validation;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -172,23 +171,11 @@ public class RangerRoleValidator extends RangerValidator {
 				valid = false;
 			}
 
-			List<RangerRole.RoleMember> users  = rangerRole.getUsers();
-			List<RangerRole.RoleMember> groups = rangerRole.getGroups();
-			List<RangerRole.RoleMember> roles  = rangerRole.getRoles();
-
-			if (CollectionUtils.isEmpty(users) && CollectionUtils.isEmpty(groups) && CollectionUtils.isEmpty(roles)) {
-				ValidationErrorCode error = ValidationErrorCode.ROLE_VALIDATION_ERR_MISSING_USER_OR_GROUPS_OR_ROLES;
-				failures.add(new ValidationFailureDetailsBuilder()
-						.field("users and groups and roles")
-						.isMissing()
-						.becauseOf(error.getMessage())
-						.errorCode(error.getErrorCode())
-						.build());
-				valid = false;
-			}
-
 			Long id = rangerRole.getId();
-			RangerRole existingRangerRole = getRangerRole(id);
+			RangerRole existingRangerRole = null;
+			if (null != id) {
+				existingRangerRole = getRangerRole(id);
+			}
 
 			if (action == Action.CREATE) {
 				if (existingRangerRole != null) {
