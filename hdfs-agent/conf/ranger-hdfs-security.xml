@@ -105,7 +105,13 @@
 		</description>
 	</property>
 	-->
-	
+	<property>
+		<name>xasecure.auditlog.hdfs.excludeusers</name>
+		<value>spark,oozie,mapred,hbase,hive,hadoop</value>
+		<description>
+			List of comma separated users for whom the audit log is not written
+		</description>
+	</property>
 	<property>
 		<name>xasecure.add-hadoop-authorization</name>
 		<value>true</value>

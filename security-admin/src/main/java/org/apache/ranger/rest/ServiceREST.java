@@ -1814,7 +1814,8 @@ public class ServiceREST {
 	@Produces({ "application/json", "application/xml" })
 	public RangerPolicy updatePolicy(RangerPolicy policy) {
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> ServiceREST.updatePolicy(" + policy + ")");
+//			LOG.debug("==> ServiceREST.updatePolicy(" + policy + ")");
+//			LOG.debug("==> ServiceREST.updatePolicy(" + policy.toStringAsJson() + ")");
 		}
 
 		RangerPolicy ret  = null;
@@ -1841,7 +1842,8 @@ public class ServiceREST {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== ServiceREST.updatePolicy(" + policy + "): " + ret);
+//			LOG.debug("<== ServiceREST.updatePolicy(" + policy + "): " + ret);
+			LOG.debug("<== ServiceREST.updatePolicy{ \"Request\":" + policy.toStringAsJson() + ", \"Response\": " + ret.toStringAsJson() +" } ");
 		}
 
 		return ret;

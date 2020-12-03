@@ -51,6 +51,9 @@ public class TagAdminRESTSink implements TagSink, Runnable {
 	private static final String MODULE_PREFIX = "/tags";
 
 	private static final String REST_URL_IMPORT_SERVICETAGS_RESOURCE = REST_PREFIX + MODULE_PREFIX + "/importservicetags/";
+	private static final String REST_URL_ADD_TAG_DEF = REST_PREFIX + MODULE_PREFIX + "/tagdef/";
+	private static final String REST_URL_ADD_TAG = REST_PREFIX + MODULE_PREFIX + "/tags/";
+	private static final String REST_URL_ADD_RESOURCE = REST_PREFIX + MODULE_PREFIX + "/resource/";
 
 	private long rangerAdminConnectionCheckInterval;
 
@@ -206,7 +209,7 @@ public class TagAdminRESTSink implements TagSink, Runnable {
 		}
 
 		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== doUpload()");
+			LOG.debug("<== doUpload() with response : " + response.toString());
 		}
 
 		return serviceTags;

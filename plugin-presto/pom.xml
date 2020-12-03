@@ -35,12 +35,12 @@
         <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-spi</artifactId>
-            <version>${presto.version}</version>
+            <version>${prestosql.version}</version>
         </dependency>
         <dependency>
             <groupId>io.prestosql</groupId>
             <artifactId>presto-jdbc</artifactId>
-            <version>${presto.version}</version>
+            <version>${prestosql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ranger</groupId>

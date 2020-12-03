@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.ranger.authorization.presto.authorizer;
+package org.apache.ranger.authorization.prestodb.authorizer;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;

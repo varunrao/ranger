@@ -13,8 +13,8 @@
  */
 package org.apache.ranger.authorization.presto.authorizer;
 
-import io.prestosql.spi.Plugin;
-import io.prestosql.spi.security.SystemAccessControlFactory;
+import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.security.SystemAccessControlFactory;
 
 import java.util.ArrayList;
 

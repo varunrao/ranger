@@ -29,6 +29,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -531,6 +533,21 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 		toString(sb);
 
 		return sb.toString();
+	}
+
+	public String toStringAsJson() {
+		ObjectMapper mapper = new ObjectMapper();
+		//Converting the Object to JSONString
+		String jsonString;
+		try {
+
+			jsonString = mapper.writeValueAsString(this);
+			System.out.println(jsonString);
+		}catch (Exception ex) {
+			System.out.println("Exception " + ex);
+			jsonString = toString();
+		}
+		return jsonString;
 	}
 
 	public StringBuilder toString(StringBuilder sb) {
