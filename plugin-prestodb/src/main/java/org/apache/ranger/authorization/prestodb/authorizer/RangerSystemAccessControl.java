@@ -154,6 +154,11 @@ public class RangerSystemAccessControl
     }
 
     @Override
+    public void checkQueryIntegrity(Identity identity, String query) {
+
+    }
+
+    @Override
     public void checkCanSetSystemSessionProperty(Identity identity, String propertyName) {
         if (!checkPermission(new RangerPrestoResource(), identity, PrestoAccessType.ADMIN)) {
             LOG.info("==> RangerSystemAccessControl.checkCanSetSystemSessionProperty denied");
