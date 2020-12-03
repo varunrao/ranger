@@ -102,33 +102,36 @@ public class RangerSystemAccessControl
                 accessType
         );
         RangerAccessResult result = null;
-
+        /**
+         * Removing to make it consistant with PrestoSQL plugin
+         */
         // Logic to use Hive Authz Policies when the catalog is Hive else Presto policies
-        LOG.debug("Checking which plugin to use : " + resource.getCatalog() + " : " + resource.getSchema() + ": " + resource.getTable() + " : " + rangerHivePlugin);
+//        LOG.debug("Checking which plugin to use : " + resource.getCatalog() + " : " + resource.getSchema() + ": " + resource.getTable() + " : " + rangerHivePlugin);
+//
+//        if ("hive".trim().equalsIgnoreCase(resource.getCatalog()) && (
+//                (resource.getSchema() != null && resource.getSchema().length() > 0) ||
+//                        (resource.getTable() != null && resource.getTable().length() > 0))
+//        ) {
+//
+//            RangerAccessRequestImpl hiveAccessRequest = new RangerHiveAccessRequest();
+//            RangerHivePrestoResource hiveResource = new RangerHivePrestoResource(resource.getSchema(), Optional.ofNullable(resource.getTable()), Optional.ofNullable(resource.getColumn()));
+//            hiveAccessRequest.setResourceMatchingScope(RangerAccessRequest.ResourceMatchingScope.SELF_OR_DESCENDANTS);
+//            hiveAccessRequest.setAction(accessType.name());
+//            hiveAccessRequest.setResource(hiveResource);
+//            hiveAccessRequest.setUser(identity.getUser());
+//            hiveAccessRequest.setUserGroups(userGroups);
+//            hiveAccessRequest.setAccessType(accessType.toString().toLowerCase());
+//
+//            LOG.debug("Using Hive Autz Plugin : " + hiveAccessRequest);
+//            result = rangerHivePlugin.isAccessAllowed(hiveAccessRequest);
+//
+//        } else {
+//            LOG.debug("Using Presto Autz Plugin : " + request);
+//            result = rangerPlugin.isAccessAllowed(request);
+//
+//        }
 
-        if ("hive".trim().equalsIgnoreCase(resource.getCatalog()) && (
-                (resource.getSchema() != null && resource.getSchema().length() > 0) ||
-                        (resource.getTable() != null && resource.getTable().length() > 0))
-        ) {
-
-            RangerAccessRequestImpl hiveAccessRequest = new RangerHiveAccessRequest();
-            RangerHivePrestoResource hiveResource = new RangerHivePrestoResource(resource.getSchema(), Optional.ofNullable(resource.getTable()), Optional.ofNullable(resource.getColumn()));
-            hiveAccessRequest.setResourceMatchingScope(RangerAccessRequest.ResourceMatchingScope.SELF_OR_DESCENDANTS);
-            hiveAccessRequest.setAction(accessType.name());
-            hiveAccessRequest.setResource(hiveResource);
-            hiveAccessRequest.setUser(identity.getUser());
-            hiveAccessRequest.setUserGroups(userGroups);
-            hiveAccessRequest.setAccessType(accessType.toString().toLowerCase());
-
-            LOG.debug("Using Hive Autz Plugin : " + hiveAccessRequest);
-            result = rangerHivePlugin.isAccessAllowed(hiveAccessRequest);
-
-        } else {
-            LOG.debug("Using Presto Autz Plugin : " + request);
-            result = rangerPlugin.isAccessAllowed(request);
-
-        }
-
+        result = rangerPlugin.isAccessAllowed(request);
         if (result != null && result.getIsAllowed()) {
             ret = true;
         }

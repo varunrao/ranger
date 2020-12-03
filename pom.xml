@@ -511,9 +511,23 @@
                 <module>credentialbuilder</module>
                 <module>ranger-plugin-classloader</module>
                 <module>ranger-util</module>
-                <module>plugin-presto</module>
+                <module>hive-agent</module>
+                <module>plugin-prestodb</module>
                 <module>ranger-prestodb-plugin-shim</module>
             </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.2-beta-5</version>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>distro/src/main/assembly/plugin-prestodb.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>linux</id>
@@ -1042,7 +1056,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${assembly.plugin.version}</version>
                 <configuration>
-                    <skipAssembly>true</skipAssembly>
+                    <skipAssembly>false</skipAssembly>
                 </configuration>
             </plugin>
             <plugin>
