@@ -9,3 +9,4 @@
 winpkg/target
 .DS_Store
 .idea
+cr_zip_upload_to_s3.sh
