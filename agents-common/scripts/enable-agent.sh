@@ -256,6 +256,10 @@ elif [ "${HCOMPONENT_NAME}" = "presto" ]; then
     HCOMPONENT_CONF_DIR=${HCOMPONENT_INSTALL_DIR}/etc
 elif [ "${HCOMPONENT_NAME}" = "prestodb" ]; then
     HCOMPONENT_CONF_DIR=${HCOMPONENT_INSTALL_DIR}/etc
+    if [ ! -d "${HCOMPONENT_LIB_DIR}" ]; then
+        echo "INFO: Creating ${HCOMPONENT_LIB_DIR}"
+        mkdir -p ${HCOMPONENT_LIB_DIR}
+    fi
 fi
 
 HCOMPONENT_ARCHIVE_CONF_DIR=${HCOMPONENT_CONF_DIR}/.archive
