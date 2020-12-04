@@ -31,7 +31,7 @@ function getInstallProperty() {
         fi
     done
 
-    echo ${propertyValue}
+    echo ${propertyValue//[[:space:]]/}
 }
 
 #
