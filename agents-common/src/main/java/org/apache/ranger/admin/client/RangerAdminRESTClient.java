@@ -17,7 +17,7 @@
  * under the License.
  */
 
- package org.apache.ranger.admin.client;
+package org.apache.ranger.admin.client;
 
 
 import com.sun.jersey.api.client.ClientResponse;
@@ -47,7 +47,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 	private static final Log LOG = LogFactory.getLog(RangerAdminRESTClient.class);
 
 	private String           serviceName;
-    private String           serviceNameUrlParam;
+	private String           serviceNameUrlParam;
 	private String           pluginId;
 	private String           clusterName;
 	private RangerRESTClient restClient;
@@ -55,6 +55,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 	private String 		     supportsPolicyDeltas;
 	private String 		     supportsTagDeltas;
 	private final String     pluginCapabilities = Long.toHexString(new RangerPluginCapability().getPluginCapabilities());
+	private Boolean skipSecure = Boolean.TRUE;
 
 	public static <T> GenericType<List<T>> getGenericType(final T clazz) {
 
@@ -77,7 +78,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 	@Override
 	public void init(String serviceName, String appId, String propertyPrefix, Configuration config) {
-	    super.init(serviceName, appId, propertyPrefix, config);
+		super.init(serviceName, appId, propertyPrefix, config);
 
 		this.serviceName = serviceName;
 		this.pluginId    = restUtils.getPluginId(serviceName, appId);
@@ -94,12 +95,12 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		supportsPolicyDeltas            = config.get(propertyPrefix + ".policy.rest.supports.policy.deltas", "false");
 		supportsTagDeltas               = config.get(propertyPrefix + ".tag.rest.supports.tag.deltas", "false");
 
-        if (!StringUtil.isEmpty(tmpUrl)) {
-            url = tmpUrl.trim();
-        }
-        if (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
-        }
+		if (!StringUtil.isEmpty(tmpUrl)) {
+			url = tmpUrl.trim();
+		}
+		if (url.endsWith("/")) {
+			url = url.substring(0, url.length() - 1);
+		}
 		if (!"true".equalsIgnoreCase(supportsPolicyDeltas)) {
 			supportsPolicyDeltas = "false";
 		}
@@ -109,12 +110,12 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		init(url, sslConfigFileName, restClientConnTimeOutMs , restClientReadTimeOutMs, config);
 
-        try {
-            this.serviceNameUrlParam = URLEncoderUtil.encodeURIParam(serviceName);
-        } catch (UnsupportedEncodingException e) {
-            LOG.warn("Unsupported encoding, serviceName=" + serviceName);
-            this.serviceNameUrlParam = serviceName;
-        }
+		try {
+			this.serviceNameUrlParam = URLEncoderUtil.encodeURIParam(serviceName);
+		} catch (UnsupportedEncodingException e) {
+			LOG.warn("Unsupported encoding, serviceName=" + serviceName);
+			this.serviceNameUrlParam = serviceName;
+		}
 	}
 
 	@Override
@@ -126,7 +127,9 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		final ServicePolicies ret;
 
 		final UserGroupInformation user = MiscUtil.getUGILoginUser();
-		final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		LOG.info("Skip Secure: " + skipSecure);
+		final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+		//final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		final ClientResponse response;
 
 		Map<String, String> queryParams = new HashMap<String, String>();
@@ -159,6 +162,10 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 				LOG.debug("Checking Service policy if updated with old api call");
 			}
 			String relativeURL = RangerRESTUtils.REST_URL_POLICY_GET_FOR_SERVICE_IF_UPDATED + serviceNameUrlParam;
+			LOG.info("Ranger url : " + relativeURL + ", serviceparams : " + serviceNameUrlParam + ", Configured URL's: " + restClient.getConfiguredURLs());
+//			if (restClient.getConfiguredURLs().get(0) != null && restClient.getConfiguredURLs().get(0).toString().startsWith("https"))
+//				relativeURL = RangerRESTUtils.REST_URL_POLICY_GET_FOR_SECURE_SERVICE_IF_UPDATED + serviceNameUrlParam;
+//			LOG.info("Ranger url : " + relativeURL + ", serviceparams : " + serviceNameUrlParam + ", Configured URL's: " + restClient.getConfiguredURLs());
 			response = restClient.get(relativeURL, queryParams);
 		}
 
@@ -206,7 +213,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		final RangerRoles ret;
 		final UserGroupInformation user = MiscUtil.getUGILoginUser();
-		final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		final boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		final ClientResponse response;
 
 		Map<String, String> queryParams = new HashMap<String, String>();
@@ -290,7 +298,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_CREATE_ROLE;
 
 		Map <String, String> queryParams = new HashMap<String, String> ();
@@ -345,7 +354,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put(RangerRESTUtils.SERVICE_NAME_PARAM, serviceNameUrlParam);
@@ -400,7 +410,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		String emptyString = "";
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_GET_USER_ROLES + execUser;
 
 		if (isSecureMode) {
@@ -455,7 +466,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		String emptyString = "";
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_GET_ALL_ROLES;
 
 		Map<String, String> queryParams = new HashMap<String, String>();
@@ -471,7 +483,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientRes;
+					return clientRes;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -513,7 +525,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		RangerRole ret = null;
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_GET_ROLE_INFO + roleName;
 
 		Map<String, String> queryParams = new HashMap<String, String>();
@@ -529,7 +542,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -571,7 +584,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_GRANT_ROLE + serviceNameUrlParam;
 
 		if (isSecureMode) {
@@ -583,7 +597,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -619,7 +633,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 		String relativeURL = RangerRESTUtils.REST_URL_SERVICE_REVOKE_ROLE + serviceNameUrlParam;
 
 		if (isSecureMode) {
@@ -631,7 +646,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -667,7 +682,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put(RangerRESTUtils.REST_PARAM_PLUGIN_ID, pluginId);
@@ -682,7 +698,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -719,7 +735,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put(RangerRESTUtils.REST_PARAM_PLUGIN_ID, pluginId);
@@ -734,7 +751,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {
@@ -770,6 +787,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		}
 
 		restClient = new RangerRESTClient(url, sslConfigFileName, config);
+//		restClient.setBasicAuthInfo("admin", "admin");
 		restClient.setRestClientConnTimeOutMs(restClientConnTimeOutMs);
 		restClient.setRestClientReadTimeOutMs(restClientReadTimeOutMs);
 
@@ -787,7 +805,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		ServiceTags ret = null;
 		ClientResponse response = null;
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put(RangerRESTUtils.LAST_KNOWN_TAG_VERSION_PARAM, Long.toString(lastKnownVersion));
@@ -865,7 +884,8 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 		List<String> ret = null;
 		String emptyString = "";
 		UserGroupInformation user = MiscUtil.getUGILoginUser();
-		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
+		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled() && skipSecure.equals(Boolean.FALSE);
+//		boolean isSecureMode = user != null && UserGroupInformation.isSecurityEnabled();
 
 		Map<String, String> queryParams = new HashMap<String, String>();
 		queryParams.put(RangerRESTUtils.SERVICE_NAME_PARAM, serviceNameUrlParam);
@@ -882,7 +902,7 @@ public class RangerAdminRESTClient extends AbstractRangerAdminClient {
 					} catch (Exception e) {
 						LOG.error("Failed to get response, Error is : "+e.getMessage());
 					}
-				return clientResp;
+					return clientResp;
 				}
 			};
 			if (LOG.isDebugEnabled()) {

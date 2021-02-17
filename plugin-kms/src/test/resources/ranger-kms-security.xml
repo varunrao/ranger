@@ -36,7 +36,7 @@
 	<property>
         <name>ranger.plugin.kms.policy.source.impl</name>
         <value>org.apache.ranger.authorization.kms.authorizer.RangerAdminClientImpl</value>
-        <!-- <value>org.apache.ranger.admin.client.RangerAdminRESTClient</value>--> 
+        <!-- <value>org.apache.ranger.admin.client.</value>-->
         <description>
             Policy source.
         </description>
