@@ -53,7 +53,7 @@ public class RangerSystemAccessControl
     private static Logger LOG = LoggerFactory.getLogger(RangerSystemAccessControl.class);
 
     private RangerBasePlugin rangerPlugin;
-    private RangerBasePlugin rangerHivePlugin;
+//    private RangerBasePlugin rangerHivePlugin;
 
     public RangerSystemAccessControl(Map<String, String> config) {
         super();
@@ -78,9 +78,9 @@ public class RangerSystemAccessControl
 
         // Added to support hive Authorization
 
-        rangerHivePlugin = new RangerBasePlugin(RANGER_HIVE_SERVICETYPE, RANGER_HIVE_APPID);
-        rangerHivePlugin.init();
-        rangerHivePlugin.setResultProcessor(new RangerDefaultAuditHandler());
+//        rangerHivePlugin = new RangerBasePlugin(RANGER_HIVE_SERVICETYPE, RANGER_HIVE_APPID);
+//        rangerHivePlugin.init();
+//        rangerHivePlugin.setResultProcessor(new RangerDefaultAuditHandler());
     }
 
     private boolean checkPermission(RangerPrestoResource resource, Identity identity, PrestoAccessType accessType) {
